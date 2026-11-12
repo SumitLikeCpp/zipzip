@@ -12,8 +12,7 @@
 
 union u_entry;
  typedef union u_entry entry;
-enum e_sortres;
- typedef enum e_sortres sortres;
+// enum e_sortres;
 union u_list;
  typedef union u_list List;
 
@@ -24,8 +23,8 @@ typedef unsigned char int8;
 typedef unsigned short int int16;
 typedef unsigned int int32;
 typedef unsigned long long int int64;
-
-typedef sortres (*sortfunc)(entry,entry);
+typedef int8 sortres;
+typedef int8 (*sortfunc)(entry,entry);
 
 #define $c (char *)
 #define $i (int)
@@ -46,6 +45,14 @@ typedef sortres (*sortfunc)(entry,entry);
 #define swap(x,y)     _Generic((x), \
     amtentry*:       amtswap) \
     ((x), (y))
+
+#define listcopy(x)   _Generic((x), \
+    amtlist*:       amtlistcopy) \
+    ((x))
+
+#define listeq(x,y)   _Generic((x), \
+    amtlist*:       amtlisteq) \
+    ((x),(y))  
 
 struct s_amtentry{
     int32 block;
@@ -70,8 +77,8 @@ union u_list{
     amtlist *amt;
 };
 
-enum e_sortres{
-    MoreThan,
+enum {
+    MoreThan=0,
     Equal,
     LessThan
 };
@@ -85,7 +92,11 @@ void showamtentry(int8 *, amtentry);
 bool amtadd(amtlist**,amtentry);
 bool increase(amtlist**);
 void amtswap(amtentry*,amtentry*);
-bool zipsort(List*,int32,sortfunc);
+
+List *zipsort(List*,sortfunc);
+amtlist *amtlistcopy(amtlist *);
+bool amtlisteq(amtlist*,amtlist*);
+int8 amtsort(entry,entry);
 
 void zero(int8*,int32);
 int main(void);

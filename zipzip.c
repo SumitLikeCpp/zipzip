@@ -1,24 +1,97 @@
 #include <zipzip.h>
 
+int8 amtsort(entry e1_,entry e2_){
+    amtentry *e1,*e2;
+
+    e1 = (amtentry *)&e1_;
+    e2 = (amtentry *)&e2_;
+
+    if(e1->amt > e2->amt)
+        return MoreThan;
+    else if(e1->amt == e2->amt)
+        return Equal;
+    return 
+        LessThan;
+}
+
+amtlist *amtlistcopy(amtlist *list){
+    amtlist *new;
+    int32 n;
+
+    new = mkamtlist();
+    if(!new){
+        return (amtlist *)0;
+    }
+    if(!list->length)
+        return new;
+    
+    for(n=0;n<list->length;n++)
+        amtadd(&new, list->data[n]);
+    
+    return new;
+}
+
+bool amtlisteq(amtlist *l1,amtlist *l2){
+    bool res;
+    int32 n;
+
+    if(!l1 || !l2)
+        return false;
+    
+    if(l1->length != l2->length)
+        return false;
+
+    res = true;
+    for(n=0;n<l1->length;n++)
+        if((l1->data[n].amt == l2->data[n].amt)
+            && (l1->data[n].block == l2->data[n].block));
+        else{
+            res = false;
+            break;
+        }
+
+    return res;
+}
+
 // sort(list,func)
-List *zipsort(List *list,int32 size, sortfun *func){
+List *zipsort(List *list_,sortfunc func){
     int32 len,n;
-    List *new;
-    sortres res;
+    amtlist *new,*list;
+    int8 res;
     bool changed;
 
+    if(!func)
+        return (List *)0;
+
+    list = (amtlist *)list_;
+
+    if(list->length < 2)
+        return (List *)0;
+
     new = listcopy(list);
+    if(!new){
+        return (List *)0;
+    }
     len = list->length;
 
-    for(n = 0;n<(len - 2);n++){
-        res = func(new->data[n],new->data[(n+1)]);
-        if(res == LessThan)
-            swap(new->data[n],new->data[(n+1)]);
+    for(n = 0;n<(len - 1);n++){
+        res = func((entry)new->data[n],(entry)new->data[(n+1)]);
+        if(res == MoreThan)
+            swap(&new->data[n],&new->data[(n+1)]);
     }
 
     changed = (listeq(list,new)) ? 
-            false;
+            false:
         true;
+
+    if(changed){
+        free(list);
+        return (List *)new;
+    }
+    else{
+        free(new);
+        return (List *)0;
+    }
 
 }
 
@@ -87,10 +160,10 @@ void showamtlist(int8* identifier,amtlist *list){
     printf("\n");
 
     if(list->length){
-        for(n=1; (n<= list->length) && (n<6);n++){
+        for(n=0; (n<list->length) && (n<5);n++){
             show(list->data[n]);
         }
-        if(list->length > 5)
+        if(list->length > 4)
             printf("   [..]\n");
     }
 
@@ -134,6 +207,8 @@ void zero(int8 *dst,int32 size){
 
 int main(){
     amtlist *list;
+    List *new;
+    amtlist *new_;
     int32 n;
 
     list = mkamtlist();
@@ -144,9 +219,25 @@ int main(){
     for(n = 0;n<0x11000;n++)
         amtadd(&list,(amtentry){0x1000000+n, n});
     swap(&list->data[1],&list->data[3]);
-    
     show(list);
-    destroy(list);
+
+    new = zipsort((List *)list,&amtsort);
+    new_ = (amtlist *)new;
+    show(new_);
+
+    new = zipsort((List *)new_,&amtsort);
+    new_ = (amtlist *)new;
+    show(new_);
+
+    new = zipsort((List *)new_,&amtsort);
+    if(!new){
+        printf("(END)\n");
+        return 0;
+    }
+    new_ = (amtlist *)new;
+    show(new_);
+
+    destroy(new_);
     
     return 0;
 }
